@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user profile information, credits, and role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique identifier for the user." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "description": "The user's profile picture URL." },
+        "phoneNumber": { "type": "string", "description": "The user's phone number." },
+        "location": { "type": "string", "description": "The user's location (City, Country)." },
+        "credits": { "type": "number", "description": "The current credit balance of the user." },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "The user's role in the application." },
+        "blockedUids": { "type": "array", "items": { "type": "string" }, "description": "List of blocked user UIDs." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created." }
+      },
+      "required": ["uid", "email", "credits", "role"]
+    },
+    "TranslationSession": {
+      "title": "Translation Session",
+      "description": "Records of translation sessions (voice, text, or call).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who performed the translation." },
+        "type": { "type": "string", "enum": ["voice", "text", "call"], "description": "The type of translation." },
+        "sourceLanguage": { "type": "string", "description": "The language translated from." },
+        "targetLanguage": { "type": "string", "description": "The language translated to." },
+        "sourceText": { "type": "string", "description": "The original text (if applicable)." },
+        "translatedText": { "type": "string", "description": "The translated text (if applicable)." },
+        "cost": { "type": "number", "description": "The credit cost of the session." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the translation occurred." },
+        "duration": { "type": "number", "description": "The duration of the session in seconds (for voice/call)." }
+      },
+      "required": ["userId", "type", "cost", "timestamp"]
+    },
+    "CreditTransaction": {
+      "title": "Credit Transaction",
+      "description": "Records of credit additions or deductions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user involved." },
+        "amount": { "type": "number", "description": "The amount of credits added (positive) or deducted (negative)." },
+        "reason": { "type": "string", "description": "The reason for the transaction (e.g., 'admin_add', 'translation_cost')." },
+        "adminId": { "type": "string", "description": "The ID of the admin who added credits (if applicable)." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the transaction occurred." }
+      },
+      "required": ["userId", "amount", "reason", "timestamp"]
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "Stores user's personal contacts for quick calling and translation.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns this contact." },
+        "name": { "type": "string", "description": "The name of the contact." },
+        "contactUid": { "type": "string", "description": "The UID of the user this contact represents (if they use the app)." },
+        "phoneNumber": { "type": "string", "description": "The phone number of the contact." },
+        "email": { "type": "string", "format": "email", "description": "The email address of the contact." },
+        "preferredLanguage": { "type": "string", "description": "The preferred language for translation." },
+        "photoURL": { "type": "string", "description": "The contact's photo URL." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the contact was added." }
+      },
+      "required": ["userId", "name"]
+    },
+    "Call": {
+      "title": "Call",
+      "description": "Stores active call signaling data.",
+      "type": "object",
+      "properties": {
+        "callerId": { "type": "string", "description": "The ID of the user who initiated the call." },
+        "receiverId": { "type": "string", "description": "The ID of the user receiving the call." },
+        "status": { "type": "string", "enum": ["ringing", "active", "ended", "rejected"], "description": "The current status of the call." },
+        "callerLang": { "type": "string", "description": "The language of the caller." },
+        "receiverLang": { "type": "string", "description": "The language of the receiver." },
+        "callerName": { "type": "string", "description": "The name of the caller." },
+        "receiverName": { "type": "string", "description": "The name of the receiver." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the call was initiated." }
+      },
+      "required": ["callerId", "receiverId", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and credit balance."
+    },
+    "/sessions/{sessionId}": {
+      "schema": "TranslationSession",
+      "description": "History of translation usage."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "CreditTransaction",
+      "description": "History of credit changes."
+    },
+    "/contacts/{contactId}": {
+      "schema": "Contact",
+      "description": "User's personal contacts."
+    },
+    "/calls/{callId}": {
+      "schema": "Call",
+      "description": "Active call signaling."
+    }
+  }
+}

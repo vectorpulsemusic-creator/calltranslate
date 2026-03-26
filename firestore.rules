@@ -1,0 +1,181 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //   - phoneNumber: string (optional)
+    //   - location: string (optional)
+    //   - credits: number (required, >= 0)
+    //   - role: string (required, 'admin' or 'user')
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: sessions
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required)
+    //   - type: string (required, 'voice', 'text', or 'call')
+    //   - sourceLanguage: string (optional)
+    //   - targetLanguage: string (optional)
+    //   - sourceText: string (optional)
+    //   - translatedText: string (optional)
+    //   - cost: number (required)
+    //   - timestamp: timestamp (required)
+    //   - duration: number (optional)
+    //
+    // Collection: transactions
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required)
+    //   - amount: number (required)
+    //   - reason: string (required)
+    //   - adminId: string (optional)
+    //   - timestamp: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+         (request.auth.token.get('email', '').lower() == "vectorpulsemusic@gmail.com"));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'credits', 'role', 'createdAt']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.credits is number && data.credits >= 0 &&
+             data.role in ['admin', 'user'] &&
+             data.createdAt is timestamp &&
+             (!('phoneNumber' in data) || data.phoneNumber is string) &&
+             (!('location' in data) || data.location is string) &&
+             (!('blockedUids' in data) || data.blockedUids is list) &&
+             (!('settings' in data) || data.settings is map);
+    }
+
+    function isValidSession(data) {
+      let requiredFields = ['userId', 'type', 'cost', 'timestamp'];
+      let allowedFields = ['userId', 'type', 'cost', 'timestamp', 'sourceLanguage', 'targetLanguage', 'sourceText', 'translatedText', 'duration'];
+      
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.userId is string &&
+             data.type in ['voice', 'text', 'call'] &&
+             data.cost is number &&
+             data.timestamp is timestamp &&
+             (!('sourceLanguage' in data) || data.sourceLanguage is string) &&
+             (!('targetLanguage' in data) || data.targetLanguage is string) &&
+             (!('sourceText' in data) || data.sourceText is string) &&
+             (!('translatedText' in data) || data.translatedText is string) &&
+             (!('duration' in data) || data.duration is number);
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['userId', 'amount', 'reason', 'timestamp']) &&
+             data.userId is string &&
+             data.amount is number &&
+             data.reason is string &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidContact(data) {
+      let requiredFields = ['userId', 'name'];
+      let allowedFields = ['userId', 'name', 'contactUid', 'phoneNumber', 'email', 'preferredLanguage', 'photoURL', 'createdAt'];
+      
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.userId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('contactUid' in data) || data.contactUid is string) &&
+             (!('phoneNumber' in data) || data.phoneNumber is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('preferredLanguage' in data) || data.preferredLanguage is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidCall(data) {
+      let requiredFields = ['callerId', 'receiverId', 'status', 'timestamp'];
+      let allowedFields = ['callerId', 'receiverId', 'status', 'timestamp', 'callerLang', 'receiverLang', 'callerName', 'receiverName'];
+      
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.callerId is string &&
+             data.receiverId is string &&
+             data.status in ['ringing', 'active', 'ended', 'rejected'] &&
+             data.timestamp is timestamp &&
+             (!('callerLang' in data) || data.callerLang is string) &&
+             (!('receiverLang' in data) || data.receiverLang is string) &&
+             (!('callerName' in data) || data.callerName is string) &&
+             (!('receiverName' in data) || data.receiverName is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin() || (isAuthenticated() && request.auth.token.email != null && request.auth.token.email.lower() == userId.lower());
+      allow create: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+      allow update: if isAdmin() || (isOwner(userId) && 
+                    isValidUser(request.resource.data) && 
+                    request.resource.data.role == resource.data.role &&
+                    (isAdmin() || request.resource.data.credits <= resource.data.credits));
+      allow delete: if isAdmin();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId && isValidSession(request.resource.data);
+      allow delete, update: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isAdmin() && isValidTransaction(request.resource.data);
+      allow delete, update: if isAdmin();
+    }
+
+    match /contacts/{contactId} {
+      allow get: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow list: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId && isValidContact(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId && isValidContact(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+    }
+
+    match /calls/{callId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.receiverId || isAdmin());
+      allow create: if isAuthenticated() && 
+                    request.auth.uid == request.resource.data.callerId && 
+                    isValidCall(request.resource.data) &&
+                    (!exists(/databases/$(database)/documents/users/$(request.resource.data.receiverId)) || 
+                     !(request.auth.uid in get(/databases/$(database)/documents/users/$(request.resource.data.receiverId)).data.get('blockedUids', [])));
+      allow update: if isAuthenticated() && 
+                    (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.receiverId) && 
+                    isValidCall(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.receiverId));
+    }
+  }
+}

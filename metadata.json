@@ -1,0 +1,5 @@
+{
+  "name": "CallTranslate",
+  "description": "Real-time voice and text translation with credit-based usage, user dashboard, and admin panel.",
+  "requestFramePermissions": ["microphone"]
+}
