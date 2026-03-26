@@ -136,12 +136,18 @@ export const CallManager: React.FC<CallManagerProps> = ({ profile }) => {
   const startCallSession = async (call: Call) => {
     // 1. Setup WebSocket for audio relay
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
+    const wsHost = import.meta.env.VITE_WS_URL || window.location.host;
+    const wsUrl = wsHost.startsWith('ws') ? wsHost : `${protocol}//${wsHost}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'join', callId: call.id, userId: profile.uid }));
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+      alert("Voice call connection failed. This hosting provider may not support WebSockets (e.g. Netlify). Please use a different hosting provider or set VITE_WS_URL.");
     };
 
     ws.onmessage = (event) => {
