@@ -290,16 +290,16 @@ export default function App() {
 
   const handleOfflineLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const storedAdmin = JSON.parse(localStorage.getItem("calltranslate_offline_admin") || '{"username":"admin","password":"pass123"}');
+    const defaultAdmin = { email: "vectorpulsemusic@gmail.com", password: "pass123!!!" };
     
-    if (username === storedAdmin.username && password === storedAdmin.password) {
-      const mockUser = { uid: "offline-admin", email: "admin@offline.local", displayName: "Offline Admin" };
+    if (username === defaultAdmin.email && password === defaultAdmin.password) {
+      const mockUser = { uid: "offline-admin", email: defaultAdmin.email, displayName: "System Admin" };
       setIsOffline(true);
       setUser(mockUser);
       setProfile({
         uid: "offline-admin",
-        email: "admin@offline.local",
-        displayName: "Offline Admin",
+        email: defaultAdmin.email,
+        displayName: "System Admin",
         photoURL: "",
         credits: 9999,
         role: "admin",
