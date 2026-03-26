@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { updatePassword } from "firebase/auth";
 import { UserProfile, AppLanguage, AppTheme, AppVoice, VOICES } from "../types";
-import { Settings, Globe, Palette, Check, AlertCircle, Loader2, Volume2, User, Camera } from "lucide-react";
+import { Settings, Globe, Palette, Check, AlertCircle, Loader2, Volume2, User, Camera, Lock } from "lucide-react";
 import { cn, t } from "../utils";
 
 interface SettingsPanelProps {
@@ -16,6 +17,8 @@ export default function SettingsPanel({ profile }: SettingsPanelProps) {
   const [displayName, setDisplayName] = useState(profile.displayName || "");
   const [photoURL, setPhotoURL] = useState(profile.photoURL || "");
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem("calltranslate_gemini_key") || "");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const lang = profile.settings?.appLanguage || "en";
 
@@ -65,6 +68,18 @@ export default function SettingsPanel({ profile }: SettingsPanelProps) {
       setError(null);
       setSuccess(false);
 
+      // Password validation
+      if (newPassword) {
+        if (newPassword !== confirmPassword) {
+          setError("Passwords do not match");
+          return;
+        }
+        if (newPassword.length < 6) {
+          setError("Password must be at least 6 characters");
+          return;
+        }
+      }
+
       // Save Gemini Key to localStorage
       if (geminiKey.trim()) {
         localStorage.setItem("calltranslate_gemini_key", geminiKey.trim());
@@ -73,12 +88,34 @@ export default function SettingsPanel({ profile }: SettingsPanelProps) {
       }
 
       const userRef = doc(db, "users", profile.uid);
-      await updateDoc(userRef, {
+      const updates: any = {
         displayName,
         photoURL,
-      });
+      };
+
+      // Handle password update
+      if (newPassword) {
+        if (profile.uid === 'offline-admin') {
+          updates.password = newPassword;
+          localStorage.setItem("calltranslate_offline_admin_password", newPassword);
+        } else if (auth.currentUser) {
+          try {
+            await updatePassword(auth.currentUser, newPassword);
+          } catch (err: any) {
+            if (err.code === 'auth/requires-recent-login') {
+              setError("Please re-login to change your password for security reasons.");
+              return;
+            }
+            throw err;
+          }
+        }
+      }
+
+      await updateDoc(userRef, updates);
 
       setSuccess(true);
+      setNewPassword("");
+      setConfirmPassword("");
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error("Failed to update profile:", err);
@@ -186,6 +223,39 @@ export default function SettingsPanel({ profile }: SettingsPanelProps) {
                   />
                   <p className="text-[9px] text-zinc-600 italic">{t("get_key_from", lang as any)} <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>. {t("key_stored_locally", lang as any)}</p>
                 </div>
+
+                <div className="pt-4 border-t border-zinc-800 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-zinc-800 rounded-xl">
+                      <Lock className="w-4 h-4 text-zinc-400" />
+                    </div>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Security</h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">New Password</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Confirm Password</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="submit"
                   disabled={isSaving}

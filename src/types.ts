@@ -13,6 +13,7 @@ export interface UserProfile {
   credits: number;
   role: 'admin' | 'user';
   plan?: UserPlan;
+  password?: string;
   createdAt: any; // Firestore Timestamp
   settings?: {
     theme: AppTheme;

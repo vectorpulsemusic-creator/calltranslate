@@ -69,8 +69,14 @@ export default function UsersPanel({ profile }: UsersPanelProps) {
         location: editingUser.location || '',
         credits: Number(editingUser.credits) || 0,
         role: editingUser.role,
-        plan: editingUser.plan || 'free'
+        plan: editingUser.plan || 'free',
+        password: editingUser.password || ''
       });
+
+      if (editingUser.uid === 'offline-admin' && editingUser.password) {
+        localStorage.setItem("calltranslate_offline_admin_password", editingUser.password);
+      }
+
       setEditingUser(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${editingUser.uid}`);
@@ -261,6 +267,16 @@ export default function UsersPanel({ profile }: UsersPanelProps) {
                       <option key={p.id} value={p.id}>{p.name} ({p.credits} Credits)</option>
                     ))}
                   </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-4">Password</label>
+                  <input
+                    type="text"
+                    value={editingUser.password || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 focus:outline-none focus:border-primary/50 transition-all"
+                    placeholder="Set new password"
+                  />
                 </div>
               </div>
 
