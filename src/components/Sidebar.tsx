@@ -9,9 +9,11 @@ interface SidebarProps {
   isAdmin: boolean;
   onLogout: () => void;
   profile: UserProfile | null;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ activeTab, setActiveTab, isAdmin, onLogout, profile }: SidebarProps) {
+export default function Sidebar({ activeTab, setActiveTab, isAdmin, onLogout, profile, isOpen, onClose }: SidebarProps) {
   const lang = profile?.settings?.appLanguage || "en";
 
   const menuItems = [
@@ -25,27 +27,39 @@ export default function Sidebar({ activeTab, setActiveTab, isAdmin, onLogout, pr
   ];
 
   if (isAdmin) {
+    menuItems.push({ id: "users", label: "Users", icon: Users, short: "Users" });
     menuItems.push({ id: "admin", label: t("admin_mode", lang), icon: Shield, short: "Admin" });
   }
 
-  return (
-    <>
-      <aside className="w-64 bg-zinc-950 border-r border-zinc-900 flex flex-col h-full hidden lg:flex p-4 space-y-6">
-      <div className="flex items-center gap-3 px-2">
-        <div className="w-9 h-9 bg-zinc-900 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-800 shadow-lg relative">
-          <Languages className="w-5 h-5 text-primary" />
+  const handleTabClick = (id: string) => {
+    setActiveTab(id);
+    if (onClose) onClose();
+  };
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full p-4 space-y-6">
+      <div className="flex items-center justify-between px-2">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-zinc-900 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-800 shadow-lg relative">
+            <Languages className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black tracking-tighter text-white">CallTranslate</h1>
+            <p className="text-[7px] uppercase tracking-[0.2em] font-black text-zinc-600">Pro Edition</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-black tracking-tighter text-white">CallTranslate</h1>
-          <p className="text-[7px] uppercase tracking-[0.2em] font-black text-zinc-600">Pro Edition</p>
-        </div>
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-2 hover:bg-zinc-900 rounded-lg">
+            <LogOut className="w-5 h-5 text-zinc-500 rotate-180" />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 space-y-0.5">
         {menuItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => handleTabClick(item.id)}
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group relative",
               activeTab === item.id
@@ -100,7 +114,29 @@ export default function Sidebar({ activeTab, setActiveTab, isAdmin, onLogout, pr
           <span className="font-bold text-sm tracking-tight">{t("logout", lang)}</span>
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="w-64 bg-zinc-950 border-r border-zinc-900 flex flex-col h-full hidden lg:flex">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Overlay Sidebar */}
+      <div className={cn(
+        "fixed inset-0 z-[60] lg:hidden transition-opacity duration-300",
+        isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      )}>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <aside className={cn(
+          "absolute left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-900 transition-transform duration-300 ease-out",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          {sidebarContent}
+        </aside>
+      </div>
 
     {/* Mobile Navigation */}
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/90 backdrop-blur-2xl border-t border-zinc-900 px-2 py-3 flex items-center justify-around z-50 safe-area-bottom">

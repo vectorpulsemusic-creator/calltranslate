@@ -136,7 +136,7 @@ export const CallManager: React.FC<CallManagerProps> = ({ profile }) => {
   const startCallSession = async (call: Call) => {
     // 1. Setup WebSocket for audio relay
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = import.meta.env.VITE_WS_URL || window.location.host;
+    const wsHost = (import.meta as any).env.VITE_WS_URL || window.location.host;
     const wsUrl = wsHost.startsWith('ws') ? wsHost : `${protocol}//${wsHost}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;

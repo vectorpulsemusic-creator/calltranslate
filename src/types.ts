@@ -1,6 +1,7 @@
 export type AppLanguage = 'en' | 'sr' | 'hu' | 'de' | 'sl';
 export type AppTheme = 'zinc' | 'emerald' | 'violet' | 'amber';
 export type AppVoice = 'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Zephyr';
+export type UserPlan = 'free' | 'advanced' | 'pro' | 'business';
 
 export interface UserProfile {
   uid: string;
@@ -11,6 +12,7 @@ export interface UserProfile {
   location?: string;
   credits: number;
   role: 'admin' | 'user';
+  plan?: UserPlan;
   createdAt: any; // Firestore Timestamp
   settings?: {
     theme: AppTheme;
@@ -18,6 +20,13 @@ export interface UserProfile {
     voice?: AppVoice;
   };
 }
+
+export const CREDIT_PLANS: { id: UserPlan; name: string; credits: number; price: string }[] = [
+  { id: 'free', name: 'Free', credits: 20, price: '$0' },
+  { id: 'advanced', name: 'Advanced', credits: 100, price: '$19' },
+  { id: 'pro', name: 'Pro', credits: 250, price: '$39' },
+  { id: 'business', name: 'Business', credits: 500, price: '$69' },
+];
 
 export const VOICES: { id: AppVoice; name: string; gender: string }[] = [
   { id: 'Puck', name: 'Puck', gender: 'Male' },

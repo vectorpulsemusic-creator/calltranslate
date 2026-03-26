@@ -1,9 +1,19 @@
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from "react";
 import { auth, db, handleFirestoreError, OperationType } from "./firebase";
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, deleteDoc } from "firebase/firestore";
-import { UserProfile, AppLanguage } from "./types";
+import { 
+  doc, 
+  getDoc, 
+  setDoc, 
+  serverTimestamp, 
+  onSnapshot, 
+  deleteDoc,
+  updateDoc,
+  increment
+} from "firebase/firestore";
+import { UserProfile, AppLanguage, CREDIT_PLANS, UserPlan } from "./types";
 import Dashboard from "./components/Dashboard";
+import UsersPanel from "./components/UsersPanel";
 import VoiceTranslator from "./components/VoiceTranslator";
 import TextTranslator from "./components/TextTranslator";
 import CallTranslator from "./components/CallTranslator";
@@ -15,7 +25,7 @@ import SetupWizard from "./components/SetupWizard";
 import { ContactList, Contact } from "./components/ContactList";
 import { CallManager } from "./components/CallManager";
 import { ChatWindow } from "./components/ChatWindow";
-import { LogIn, Loader2, AlertTriangle, Languages, CreditCard, Plus, User, Lock, MapPin, Phone as PhoneIcon, Mail } from "lucide-react";
+import { LogIn, Loader2, AlertTriangle, Languages, CreditCard, Plus, User, Lock, MapPin, Phone as PhoneIcon, Mail, Users as UsersIcon, Zap, Check, X, Menu as SidebarIcon } from "lucide-react";
 import { cn, t } from "./utils";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -80,6 +90,9 @@ export default function App() {
   const [regLocation, setRegLocation] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [activeChat, setActiveChat] = useState<Contact | null>(null);
+  const [showBuyCredits, setShowBuyCredits] = useState(false);
+  const [buyingPlan, setBuyingPlan] = useState<UserPlan | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -323,9 +336,27 @@ export default function App() {
     setProfile(null);
   };
 
-  const handleBuyCredits = () => {
-    // Placeholder for credit purchase logic
-    alert("Redirecting to payment gateway...");
+  const handleBuyCredits = async (planId: UserPlan) => {
+    if (!profile) return;
+    
+    const plan = CREDIT_PLANS.find(p => p.id === planId);
+    if (!plan) return;
+
+    setBuyingPlan(planId);
+    try {
+      const userRef = doc(db, "users", profile.uid);
+      await updateDoc(userRef, {
+        credits: increment(plan.credits),
+        plan: planId
+      });
+      setShowBuyCredits(false);
+      alert(`Successfully purchased ${plan.name} plan! ${plan.credits} credits added.`);
+    } catch (error) {
+      console.error("Purchase failed:", error);
+      alert("Failed to process purchase. Please try again.");
+    } finally {
+      setBuyingPlan(null);
+    }
   };
 
   if (loading) {
@@ -583,6 +614,7 @@ export default function App() {
           />
         </div>
       );
+      case "users": return <UsersPanel profile={profile} />;
       case "history": return <HistoryPanel profile={profile} />;
       case "settings": return <SettingsPanel profile={profile} />;
       case "admin": return profile.role === "admin" ? <AdminPanel profile={profile} /> : <Dashboard profile={profile} />;
@@ -627,17 +659,21 @@ export default function App() {
           isAdmin={profile?.role === "admin"} 
           onLogout={handleLogout}
           profile={profile}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
         
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top Bar */}
           <header className="h-14 md:h-20 border-b border-zinc-900/50 flex items-center justify-between px-4 md:px-12 bg-[#050505]/50 backdrop-blur-xl z-20">
             <div className="flex items-center gap-3 md:gap-4">
-              <div className="lg:hidden w-8 h-8 md:w-10 md:h-10 bg-zinc-900 rounded-lg md:rounded-xl flex items-center justify-center overflow-hidden border border-zinc-800 shadow-lg relative">
-                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => e.currentTarget.style.display = 'none'} />
-                <Languages className="w-4 h-4 md:w-5 md:h-5 text-primary absolute" />
-              </div>
-              <div className="hidden xs:block">
+              <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="lg:hidden p-2 hover:bg-zinc-900 rounded-lg transition-colors"
+              >
+                <SidebarIcon className="w-5 h-5 text-zinc-400" />
+              </button>
+              <div className="hidden xs:flex items-center gap-3 md:gap-4">
                 <h2 className="text-[10px] md:text-sm font-black text-zinc-500 uppercase tracking-widest">
                   {t(activeTab, profile.settings?.appLanguage)}
                 </h2>
@@ -663,7 +699,7 @@ export default function App() {
               </div>
               
               <button
-                onClick={handleBuyCredits}
+                onClick={() => setShowBuyCredits(true)}
                 className="flex items-center gap-1.5 px-3 md:px-6 py-1.5 md:py-2.5 bg-primary hover:opacity-90 text-white rounded-lg md:rounded-2xl font-black text-[10px] md:text-sm transition-all shadow-lg shadow-primary-glow active:scale-95"
               >
                 <Plus className="w-3 h-3 md:w-4 md:h-4" />
@@ -686,6 +722,91 @@ export default function App() {
           userLanguage={profile?.settings?.appLanguage || 'en'}
           lang={profile?.settings?.appLanguage || 'en'}
         />
+      )}
+
+      {/* Buy Credits Modal */}
+      {showBuyCredits && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-zinc-900 border border-zinc-800 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+              <div>
+                <h2 className="text-2xl font-black tracking-tighter">Upgrade Your Plan</h2>
+                <p className="text-zinc-500 text-xs font-black uppercase tracking-widest mt-1">Select a package to add credits to your account</p>
+              </div>
+              <button 
+                onClick={() => setShowBuyCredits(false)}
+                className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {CREDIT_PLANS.map((plan) => (
+                <div 
+                  key={plan.id}
+                  className={cn(
+                    "relative p-6 rounded-3xl border transition-all flex flex-col",
+                    profile.plan === plan.id 
+                      ? "bg-primary/10 border-primary shadow-lg shadow-primary/10" 
+                      : "bg-zinc-950 border-zinc-800 hover:border-zinc-700"
+                  )}
+                >
+                  {profile.plan === plan.id && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                      Current Plan
+                    </div>
+                  )}
+                  <div className="mb-4">
+                    <h3 className="text-lg font-black tracking-tight">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1 mt-2">
+                      <span className="text-3xl font-black">{plan.price}</span>
+                      <span className="text-zinc-500 text-xs font-bold">/one-time</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 mb-8 flex-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Zap className="w-4 h-4 text-primary" />
+                      <span className="font-bold">{plan.credits} Credits</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                      <Check className="w-4 h-4 text-zinc-600" />
+                      <span>Instant Translation</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                      <Check className="w-4 h-4 text-zinc-600" />
+                      <span>All Languages</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleBuyCredits(plan.id)}
+                    disabled={buyingPlan !== null}
+                    className={cn(
+                      "w-full py-3 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2",
+                      profile.plan === plan.id
+                        ? "bg-zinc-800 text-zinc-400 cursor-default"
+                        : "bg-primary text-black hover:scale-105 active:scale-95"
+                    )}
+                  >
+                    {buyingPlan === plan.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      profile.plan === plan.id ? "Selected" : "Buy Now"
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="p-6 bg-zinc-950/50 border-t border-zinc-800 text-center">
+              <p className="text-xs text-zinc-500 font-medium">
+                Secure checkout powered by Stripe. Credits are added instantly to your account.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </ErrorBoundary>
   );
