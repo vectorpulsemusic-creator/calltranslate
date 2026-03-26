@@ -139,6 +139,9 @@ const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = {
     translation: "Translation",
     audio_input: "Audio input",
     audio_output: "Audio output",
+    trouble_logging_in: "Trouble logging in",
+    use_admin_bypass: "Use Admin Bypass",
+    stable_admin_login: "Stable Admin Login",
   },
   sr: {
     dashboard: "Kontrolna tabla",
@@ -257,6 +260,9 @@ const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = {
     translation: "Prevod",
     audio_input: "Audio ulaz",
     audio_output: "Audio izlaz",
+    trouble_logging_in: "Problemi sa prijavom",
+    use_admin_bypass: "Koristi Admin zaobilaznicu",
+    stable_admin_login: "Stabilna Admin prijava",
   },
   hu: {
     dashboard: "Irányítópult",
@@ -375,6 +381,9 @@ const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = {
     translation: "Fordítás",
     audio_input: "Audio bemenet",
     audio_output: "Audio kimenet",
+    trouble_logging_in: "Bejelentkezési probléma",
+    use_admin_bypass: "Admin megkerülés használata",
+    stable_admin_login: "Stabil Admin bejelentkezés",
   },
   de: {
     dashboard: "Dashboard",
@@ -493,6 +502,9 @@ const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = {
     translation: "Übersetzung",
     audio_input: "Audio-Eingang",
     audio_output: "Audio-Ausgang",
+    trouble_logging_in: "Probleme beim Login",
+    use_admin_bypass: "Admin-Bypass verwenden",
+    stable_admin_login: "Stabiler Admin-Login",
   },
   sl: {
     dashboard: "Nadzorna plošča",
@@ -611,6 +623,9 @@ const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = {
     translation: "Prevod",
     audio_input: "Avdio vhod",
     audio_output: "Avdio izhod",
+    trouble_logging_in: "Težave s prijavo",
+    use_admin_bypass: "Uporabi Admin obvoz",
+    stable_admin_login: "Stabilna Admin prijava",
   },
 };
 
