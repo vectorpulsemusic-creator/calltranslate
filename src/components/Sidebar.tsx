@@ -1,5 +1,5 @@
 import React from "react";
-import { LayoutDashboard, Mic, Type, History, Settings, LogOut, Shield, Phone, Languages, Users } from "lucide-react";
+import { LayoutDashboard, Mic, Type, History, Settings, LogOut, Shield, Phone, Languages, Users, Zap } from "lucide-react";
 import { cn, t } from "../utils";
 import { UserProfile } from "../types";
 
@@ -22,6 +22,7 @@ export default function Sidebar({ activeTab, setActiveTab, isAdmin, onLogout, pr
     { id: "text", label: t("text", lang), icon: Type, short: "Text" },
     { id: "calls", label: t("calls", lang), icon: Phone, short: "Calls" },
     { id: "contacts", label: t("contacts", lang), icon: Users, short: "Users" },
+    { id: "plans", label: "Plans", icon: Zap, short: "Plans" },
     { id: "history", label: t("history", lang), icon: History, short: "Hist" },
     { id: "settings", label: t("settings", lang), icon: Settings, short: "Set" },
   ];

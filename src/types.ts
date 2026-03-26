@@ -21,11 +21,39 @@ export interface UserProfile {
   };
 }
 
-export const CREDIT_PLANS: { id: UserPlan; name: string; credits: number; price: string }[] = [
-  { id: 'free', name: 'Free', credits: 20, price: '$0' },
-  { id: 'advanced', name: 'Advanced', credits: 100, price: '$19' },
-  { id: 'pro', name: 'Pro', credits: 250, price: '$39' },
-  { id: 'business', name: 'Business', credits: 500, price: '$69' },
+export const CREDIT_PLANS: { id: UserPlan; name: string; credits: number; price: string; description: string; features: string[] }[] = [
+  { 
+    id: 'free', 
+    name: 'Free', 
+    credits: 20, 
+    price: '$0',
+    description: 'Perfect for trying out our translation services.',
+    features: ['20 Credits included', 'Standard translation speed', 'Basic voice options', 'Community support']
+  },
+  { 
+    id: 'advanced', 
+    name: 'Advanced', 
+    credits: 100, 
+    price: '$19',
+    description: 'Great for frequent travelers and casual users.',
+    features: ['100 Credits included', 'Priority translation speed', 'All voice options', 'Email support', 'No ads']
+  },
+  { 
+    id: 'pro', 
+    name: 'Pro', 
+    credits: 250, 
+    price: '$39',
+    description: 'Designed for professionals and power users.',
+    features: ['250 Credits included', 'Ultra-fast translation', 'HD Voice quality', 'Priority support', 'Usage analytics']
+  },
+  { 
+    id: 'business', 
+    name: 'Business', 
+    credits: 500, 
+    price: '$69',
+    description: 'The ultimate package for teams and businesses.',
+    features: ['500 Credits included', 'Dedicated account manager', 'API Access', 'Custom voice profiles', 'Team management']
+  },
 ];
 
 export const VOICES: { id: AppVoice; name: string; gender: string }[] = [
