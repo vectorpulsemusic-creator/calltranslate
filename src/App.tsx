@@ -189,8 +189,10 @@ export default function App() {
       console.error("Login failed:", error);
       if (error.code === 'auth/popup-blocked') {
         alert("Please allow popups for this site to login with Google.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        alert(`UNAUTHORIZED DOMAIN: You must add "${window.location.hostname}" to your Firebase project's Authorized Domains in the Firebase Console (Authentication > Settings > Authorized domains).`);
       } else {
-        alert("Google login failed. Try manual login if you are in a restricted environment.");
+        alert(`Google login failed: ${error.message}. Try manual login if you are in a restricted environment.`);
       }
     }
   };
